@@ -17,9 +17,10 @@ from imaging.adapters.aws import OpenSearchIndex
 from imaging.documents import INDEX_NAME, MAPPING
 
 # "index" is the documented default action group for creating/updating documents (index*, update*, bulk*,
-# mapping put); the bare indices:data/write/index action was refused with security_exception in the sandbox run.
-# https://docs.opensearch.org/latest/security/access-control/default-action-groups/
-WRITER = {"cluster_permissions": [],
+# mapping put) https://docs.opensearch.org/latest/security/access-control/default-action-groups/ . Single-document
+# writes are executed as a one-item bulk request, whose top-level action indices:data/write/bulk is authorised as a
+# cluster permission; without it every write was refused with security_exception in the sandbox run.
+WRITER = {"cluster_permissions": ["indices:data/write/bulk"],
           "index_permissions": [{"index_patterns": [INDEX_NAME],
                                  "allowed_actions": ["index", "indices:data/read/get"]}]}
 READER = {"cluster_permissions": [],

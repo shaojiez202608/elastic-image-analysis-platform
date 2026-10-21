@@ -147,6 +147,16 @@ class OpenSearchIndex:
             raise TransientError("search unreachable") from e
 
     @staticmethod
+    def _denied_action(resp: dict) -> str:
+        """For security_exception: the permission name from "no permissions for [<ACTION>]" (a fixed keyword)."""
+        import re
+
+        err = resp.get("error")
+        reason = err.get("reason", "") if isinstance(err, dict) else ""
+        m = re.search(r"no permissions for \[([a-z_:/*\[\]]{1,80})\]", reason if isinstance(reason, str) else "")
+        return m.group(1) if m else ""
+
+    @staticmethod
     def _error_type(resp: dict) -> str:
         err = resp.get("error")
         etype = err.get("type") if isinstance(err, dict) else None
@@ -160,7 +170,7 @@ class OpenSearchIndex:
             return IndexOutcome("duplicate")
         if status not in (200, 201):
             log.warning(json.dumps({"event": "search_write_failed", "status": status,
-                                    "error_type": self._error_type(resp)}))
+                                    "error_type": self._error_type(resp), "denied": self._denied_action(resp)}))
             raise RuntimeError(f"index write failed with {status}")
         return IndexOutcome(resp.get("result", "created"))
 

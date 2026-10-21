@@ -126,3 +126,11 @@ def test_opensearch_search_pages():
     assert page["total"] == 3 and page["next_cursor"]
     body = json.loads(t.calls[0][3])
     assert body["query"]["bool"]["filter"] == [{"term": {"status": "analyzed"}}]
+
+
+def test_denied_action_keyword_only():
+    resp = {"error": {"type": "security_exception",
+                      "reason": "no permissions for [indices:data/write/bulk] and User [name=arn:aws:iam::111122223333:role/x]"}}
+    assert OpenSearchIndex._denied_action(resp) == "indices:data/write/bulk"
+    assert OpenSearchIndex._denied_action({"error": {"reason": "free text <script>"}}) == ""
+    assert OpenSearchIndex._error_type({"error": {"type": "has spaces!"}}) == "unknown"

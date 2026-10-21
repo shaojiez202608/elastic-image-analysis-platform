@@ -50,6 +50,8 @@ def main() -> int:
     a = ap.parse_args()
     cl = Cloud(a.config)
     started = datetime.now(UTC)
+    run = f"{started:%m%d%H%M%S}"  # per-run tags, so earlier runs never count in the search checks
+    tag, tag_bad, tag_fault = f"e2e-{run}", f"e2e-bad-{run}", f"e2e-fault-{run}"
     print(f"[e2e] region {cl.region}, prefix {cl.p}")
 
     print("[e2e] deny and validation paths")
@@ -76,15 +78,15 @@ def main() -> int:
     print("[e2e] D1 basic flow + D3 failure cases (asynchronous path)")
     good = []
     for i in range(6):
-        iid, st = cl.upload(good_image(10 + i), "image/jpeg", category="batch", tags=["e2e"])
+        iid, st = cl.upload(good_image(10 + i), "image/jpeg", category="batch", tags=[tag])
         good.append(iid)
     bad = {}
     for case in ("truncated_jpeg", "text_as_jpeg", "bomb_png", "png_declared_jpeg"):
         data, ctype, reason = bad_file(case)
-        iid, st = cl.upload(data, ctype, category="general", tags=["e2e-bad"])
+        iid, st = cl.upload(data, ctype, category="general", tags=[tag_bad])
         bad[iid] = reason
-    t_id, _ = cl.upload(good_image(50), "image/jpeg", fault="timeout", tags=["e2e-fault"])
-    e_id, _ = cl.upload(good_image(51), "image/jpeg", fault="error_once", tags=["e2e-fault"])
+    t_id, _ = cl.upload(good_image(50), "image/jpeg", fault="timeout", tags=[tag_fault])
+    e_id, _ = cl.upload(good_image(51), "image/jpeg", fault="error_once", tags=[tag_fault])
     print(f"  uploaded {len(good)} good, {len(bad)} bad, 2 fault-injected; waiting (endpoint may start from zero)")
     states = wait_status(cl, good + list(bad) + [e_id], timeout=a.timeout)
     check("all good images analyzed", all(states[i].get("status") == "DONE" for i in good),
@@ -129,7 +131,7 @@ def main() -> int:
     print("[e2e] D4 search and paging")
     seen, cursor, total = [], None, None
     while True:
-        params = {"tag": "e2e", "size": "4", **({"cursor": cursor} if cursor else {})}
+        params = {"tag": tag, "size": "4", **({"cursor": cursor} if cursor else {})}
         code, page = cl.call("GET", "/search", params=params)
         if code != 200:
             break
@@ -140,9 +142,9 @@ def main() -> int:
             break
     check("tag filter with cursor paging returns each image once",
           set(good) <= set(seen) and len(seen) == len(set(seen)) and total == len(seen), f"total {total}, seen {len(seen)}")
-    code, page = cl.call("GET", "/search", params={"status": "rejected", "tag": "e2e-bad"})
+    code, page = cl.call("GET", "/search", params={"status": "rejected", "tag": tag_bad})
     check("status filter finds rejected files", code == 200 and page["total"] == len(bad), f"total {page.get('total')}")
-    code, page = cl.call("GET", "/search", params={"top1_class": str(d0.get("top1_class", 0)), "tag": "e2e"})
+    code, page = cl.call("GET", "/search", params={"top1_class": str(d0.get("top1_class", 0)), "tag": tag})
     check("result-field filter (top1_class) finds the image", good[0] in [d["image_id"] for d in page.get("items", [])])
 
     out = ROOT / "out"

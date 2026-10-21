@@ -68,7 +68,7 @@ def test_scale_from_zero_negative_control():
 def test_timeline_svg_is_valid_xml_with_tooltips():
     svg = timeline_svg([{"t": 0, "a": 1}, {"t": 15, "a": 3}], [("a", "Queue <depth>")],
                        [{"t": 10, "label": "endpoint 0->1"}])
-    root = ET.fromstring(svg)
+    root = ET.fromstring(svg)  # nosec B314 - parses the SVG this test just generated, not external input
     titles = [e.text for e in root.iter("{http://www.w3.org/2000/svg}title")]
     assert any("endpoint 0-&gt;1" in (t or "") or "endpoint 0->1" in (t or "") for t in titles)
     assert "Queue &lt;depth&gt;" in svg

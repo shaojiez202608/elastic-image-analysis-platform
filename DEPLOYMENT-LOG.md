@@ -26,17 +26,17 @@ The service-linked roles and the API Gateway CloudWatch Logs role already existe
 
 | Time (UTC) | Step | Result |
 |---|---|---|
-| 02:30 | `make deploy` (commit 9641d4d): preflight PASS, network + storage deployed, CodeBuild built image and model | ok |
-| 02:4x | inference stack | **failed**: endpoint creation rejected the execution role: SageMaker AI validates `s3:ListBucket` on the asynchronous output bucket. Stack rolled back. Fix d3a80bc (ListBucket on the images bucket). |
+| 02:30 | `make deploy` (commit f8f953a): preflight PASS, network + storage deployed, CodeBuild built image and model | ok |
+| 02:4x | inference stack | **failed**: endpoint creation rejected the execution role: SageMaker AI validates `s3:ListBucket` on the asynchronous output bucket. Stack rolled back. Fix cb254b8 (ListBucket on the images bucket). |
 | 02:4x-03:0x | search stack (domain, bootstrap, API) | ok; bootstrap created the index and the two FGAC roles |
-| (local) | osv-scanner on uv.lock | pillow and certifi advisories -> upgrade 763c005 |
-| 03:05-03:11 | redeploy (commit 50a4749): inference, compute, observability | ok; endpoint InService, model loaded (container `/ping` 200) |
-| 03:11 | `scripts/e2e_cloud.py` | **failed**: API returned 502 - `Runtime.ImportModuleError` (settings.py imported a module excluded from the Lambda package). Fix 8b77879 + packaging test. |
-| 03:2x | redeploy (5178007), e2e again | deny paths passed; every index write failed (RuntimeError, cause not logged). Diagnostics 155024b: log status and error type keyword. |
-| 03:48 | after redeploy | writes refused with 403 `security_exception` (FGAC). Fix 62924b3 (writer role: action group `index`) - still refused. Fix e72d332: cluster permission `indices:data/write/bulk` for the writer role. |
-| 04:00-04:25 | redeploy (e72d332, `ALLOW_DESTRUCTIVE=1` after the guard refused a may-replace of the bootstrap custom resource) | writes succeed |
+| (local) | osv-scanner on uv.lock | pillow and certifi advisories -> upgrade 98c18b3 |
+| 03:05-03:11 | redeploy (commit c546f3c): inference, compute, observability | ok; endpoint InService, model loaded (container `/ping` 200) |
+| 03:11 | `scripts/e2e_cloud.py` | **failed**: API returned 502 - `Runtime.ImportModuleError` (settings.py imported a module excluded from the Lambda package). Fix 2ccb2d2 + packaging test. |
+| 03:2x | redeploy (6ee95d0), e2e again | deny paths passed; every index write failed (RuntimeError, cause not logged). Diagnostics a8079b3: log status and error type keyword. |
+| 03:48 | after redeploy | writes refused with 403 `security_exception` (FGAC). Fix 8a2341d (writer role: action group `index`) - still refused. Fix 9b240a7: cluster permission `indices:data/write/bulk` for the writer role. |
+| 04:00-04:25 | redeploy (9b240a7, `ALLOW_DESTRUCTIVE=1` after the guard refused a may-replace of the bootstrap custom resource) | writes succeed |
 | 04:2x | redrive of the results DLQ (`sqs start-message-move-task`) | the messages that had failed during the FGAC problem were indexed - DLQ redrive demonstrated |
-| 04:26 | e2e (6d4b565 per-run tags after a polluted count) | 16/16 passed (VERIFICATION.md) |
+| 04:26 | e2e (ef59004 per-run tags after a polluted count) | 16/16 passed (VERIFICATION.md) |
 | 04:46 | load test, elastic, burst 40, idle 900 s | 40/40 analyzed; both layers scaled out and in (VERIFICATION.md) |
 | 05:14 | `set_capacity.py fixed` 2/1/2, same burst | 40/40 analyzed |
 | 05:2x | `set_capacity.py elastic` (profile values restored) | ok |
@@ -60,7 +60,7 @@ the saved asset manifests. **The residual check failed**: `仍有残留` - two S
 actions (`proto-imaging-endpoint-<N>-aws-endpoint`, created automatically by SageMaker AI for each endpoint
 deployment and tagged with the endpoint's tags).
 
-Handling (commit ba9998f):
+Handling (commit ad8fd0c):
 - inspected the lineage graph: 2 contexts, 2 actions and 3 artifacts (model data in the project's artifacts bucket,
   the prebuilt image by tag and by digest), all created during this run and associated only with this project's
   actions; deleted with `scripts/cleanup_lineage.py --delete` (associations first);

@@ -16,7 +16,7 @@ result does not prove. Account IDs are replaced by 111122223333.
 | Synth with another prefix/Region (acknowledgements are templated) | `tests/test_infra.py::test_nag_acknowledgements_follow_the_configured_prefix` | pass |
 | Secret scan, full history, plus canary | `make scan` (gitleaks 8.x) | no leaks; canary detected (rule aws-access-token) |
 | Workflow lint | `uvx zizmor .github/workflows` | no findings |
-| Dependency vulnerabilities | `osv-scanner scan source --lockfile uv.lock` | first run: pillow 12.3.0 and certifi 2026.7.22 High/Critical -> upgraded (commit 763c005); now "No issues found" |
+| Dependency vulnerabilities | `osv-scanner scan source --lockfile uv.lock` | first run: pillow 12.3.0 and certifi 2026.7.22 High/Critical -> upgraded (commit 98c18b3); now "No issues found" |
 | Python security lint | `uvx bandit -r src scripts infra model -l` | no issues (urlopen calls on fixed/checked https URLs marked with reasons) |
 | ASH | not run locally: no Docker on this machine (ASH container mode). The CI job `ash` (copied from the reference workflow that ran all scanners on GitHub) is the place where ASH runs. **Not yet run on GitHub** - to be confirmed after push. |
 
@@ -27,25 +27,27 @@ fire on planted words), secret-scan canary, invalid model outputs in `test_model
 
 ## Repository self-check (final commit)
 
-- forbidden-term scan over `git log --all -p` (the term list of the project brief): 2 hits, both the same line of
-  `tests/test_repo_hygiene.py` (a local-path guard pattern) added in 429f019 and removed in 2757818; the working tree
-  is clean. History was not rewritten (project rule); see the hand-over notes.
+- forbidden-term scan over `git log --all -p` (the term list of the project brief): 0 hits. A local-path guard
+  pattern in `tests/test_repo_hygiene.py` (added in 7776047, removed in a1fbf64) had named the working directory; that
+  alternative was removed from every commit with git-filter-repo --replace-text before the repository was pushed, and
+  the commit references in this file and DEPLOYMENT-LOG.md were remapped with the commit map (only that test line
+  changed, so the verified build is unchanged).
 - authors/committers: one identity; all commit subjects are Conventional Commits; no 12-digit values in the working
-  tree other than 111122223333 (a placeholder-shaped example ID from a test literal remains in history: 429f019,
-  removed in 3fb8571).
+  tree other than 111122223333 (a placeholder-shaped example ID from a test literal remains in history: 7776047,
+  removed in 965e246).
 
 ## Cloud verification (2026-10-21, us-west-2, profile `config/sandbox.json` = sandbox template with Region us-west-2)
 
 Region note: us-east-1 (template default) had no VPC quota left; see DEPLOYMENT-LOG.md.
 
-Deployed artifacts: worker image and Lambda/infra code from commit `e72d332`. Later commits changed only client-side
-scripts and tests (`6d4b565` e2e per-run tags, `9749b7d` comment-only nosec markers, `bcfed64` comparison window,
-`3fb8571` test literal, `ba9998f` lineage/bootstrap cleanup in destroy and the residual check) and documentation;
-`src/`, `infra/`, `model/`, `docker/` and `buildspec/` are unchanged after `e72d332` except comments. The ops-script
+Deployed artifacts: worker image and Lambda/infra code from commit `9b240a7`. Later commits changed only client-side
+scripts and tests (`ef59004` e2e per-run tags, `e01d00c` comment-only nosec markers, `5ebe02f` comparison window,
+`965e246` test literal, `ad8fd0c` lineage/bootstrap cleanup in destroy and the residual check) and documentation;
+`src/`, `infra/`, `model/`, `docker/` and `buildspec/` are unchanged after `9b240a7` except comments. The ops-script
 changes were exercised against the same sandbox (comparison on the recorded runs, lineage and bootstrap cleanup,
-residual check); the stacks were not redeployed after `e72d332`.
+residual check); the stacks were not redeployed after `9b240a7`.
 
-### End-to-end (`scripts/e2e_cloud.py`, record `out/e2e-20261021T043606Z.json`, commit 6d4b565): 16/16 passed
+### End-to-end (`scripts/e2e_cloud.py`, record `out/e2e-20261021T043606Z.json`, commit ef59004): 16/16 passed
 
 | Check | Result |
 |---|---|
@@ -66,7 +68,7 @@ residual check); the stacks were not redeployed after `e72d332`.
 Earlier runs of the same script (before the fixes listed in DEPLOYMENT-LOG.md) failed: 502 from the API
 (ImportModuleError), all document writes 403 (FGAC), and a search count polluted by an earlier run's tags.
 
-### D2 load test (elastic), run `elastic-20261021T044629Z`, commit e72d332 deployed
+### D2 load test (elastic), run `elastic-20261021T044629Z`, commit 9b240a7 deployed
 
 `scripts/loadtest.py --label elastic --burst 40 --idle-seconds 900`, starting from idle (dispatcher and indexer at
 0 tasks, endpoint scaled in to 0 instances). 40/40 images analyzed. Order of scaling activities recorded in
@@ -86,7 +88,7 @@ The timeline (`timeline.svg`, `timeline.csv`) stays in `out/` (git-ignored) and 
 ### D5 fixed vs elastic, runs `fixed-20261021T051419Z` vs `elastic-20261021T044629Z`
 
 Fixed reference: `set_capacity.py fixed --workers 2 --indexers 1 --instances 2 --wait` (all capacity in service
-before the burst), same 40-image burst. `compare_runs.py` (commit bcfed64), elastic relative to fixed:
+before the burst), same 40-image burst. `compare_runs.py` (commit 5ebe02f), elastic relative to fixed:
 
 | Measure | Elastic relative to fixed |
 |---|---|

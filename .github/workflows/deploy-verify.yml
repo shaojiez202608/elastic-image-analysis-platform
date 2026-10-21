@@ -1,0 +1,57 @@
+# Sandbox deployment verification. Manual trigger only, behind an environment that requires
+# approval, with short-lived credentials from GitHub OIDC (no stored keys).
+name: deploy-verify
+on:
+  workflow_dispatch: # manual only; no inputs, so nothing user-supplied reaches the run
+permissions: {} # no workflow-level permissions; the job asks for what it needs
+concurrency:
+  group: deploy-verify
+  cancel-in-progress: false
+jobs:
+  deploy-verify:
+    name: Deploy, verify, load test and destroy (sandbox)
+    permissions:
+      contents: read # checkout
+      id-token: write # GitHub OIDC token for aws-actions/configure-aws-credentials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    environment: sandbox-deploy # configure required reviewers on this environment
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0 # build.sh archives HEAD
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/<DEPLOY_VERIFY_ROLE_NAME>
+          aws-region: us-west-2
+      - run: make init
+      - name: Deploy (preflight first; refuses destructive diffs)
+        env:
+          CONFIRM: ${{ vars.SANDBOX_ACCOUNT_LAST4 }}
+        run: make deploy
+      - name: Verify (end to end, deny paths)
+        run: make verify
+      - name: Minimal load test (scaling timeline)
+        run: uv run python scripts/loadtest.py --label elastic --burst 40 --idle-seconds 600
+      - name: Keep the run records
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sandbox-run
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Destroy
+        if: ${{ always() }}
+        env:
+          CONFIRM_DESTROY: proto-imaging
+          CONFIRM_DATA: "yes"
+        run: make destroy
+      - name: Residual check
+        if: ${{ always() }}
+        run: make verify-cleanup

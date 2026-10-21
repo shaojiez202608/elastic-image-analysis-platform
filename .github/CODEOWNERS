@@ -1,0 +1,7 @@
+# Sensitive paths (CI, scanning configuration, IAM/nag code, AI assistant configuration) need review by the maintainer.
+/.github/                         @shaojiez202608
+/.gitleaks.toml                   @shaojiez202608
+/infra/imaging_infra/nag.py       @shaojiez202608
+/infra/imaging_infra/trust.py     @shaojiez202608
+/AGENTS.md                        @shaojiez202608
+/CLAUDE.md                        @shaojiez202608

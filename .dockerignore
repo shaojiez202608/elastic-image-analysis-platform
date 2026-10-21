@@ -1,0 +1,5 @@
+# Only the worker sources are copied into the image (see docker/worker/Dockerfile).
+**
+!src/imaging/**
+!docker/worker/requirements.txt
+**/__pycache__

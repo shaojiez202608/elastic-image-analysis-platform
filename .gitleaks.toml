@@ -1,0 +1,6 @@
+# gitleaks configuration: default rules, no repository-wide allowlist.
+# Any future exemption must name a single path and rule and carry a reason comment.
+title = "elastic-image-analysis-platform"
+
+[extend]
+useDefault = true

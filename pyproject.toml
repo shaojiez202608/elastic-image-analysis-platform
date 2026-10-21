@@ -1,0 +1,41 @@
+[project]
+name = "elastic-image-analysis-platform"
+version = "0.1.0"
+description = "Prototype: upload -> queue -> ARM64 container workers -> SageMaker AI asynchronous inference -> OpenSearch metadata search, with two-layer queue-driven scaling and a fixed-vs-elastic evaluation method"
+readme = "README.md"
+license = "MIT-0"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+# Runtime of the worker / Lambda code and the local mode (also installed in the worker image).
+runtime = ["boto3>=1.40", "pillow>=11.3"]
+dev = ["pytest>=8", "ruff>=0.6", "moto[s3,sqs,dynamodb,sns]>=5.0"]
+infra = ["aws-cdk-lib>=2.220.0", "constructs>=10.4", "cdk-nag>=2.37"]
+# Optional: runs model/code/inference.py locally against the real weights (not used by CI).
+model = ["torch>=2.6", "torchvision>=0.21"]
+
+[tool.uv]
+package = false
+# Dependency cooldown: do not resolve package versions published in the last 7 days.
+exclude-newer = "7 days"
+default-groups = ["runtime", "dev", "infra"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "infra", "model/code", "."]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["model: needs the optional model dependency group and downloaded weights"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = ["cdk.out", "build", "out"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+ignore = ["S101", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S"]
+"scripts/**" = ["S603", "S607", "S311"]

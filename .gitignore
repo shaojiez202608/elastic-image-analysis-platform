@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# CDK
+cdk.out/
+cdk.context.json
+*.zip
+# Generated data, model artifacts and run outputs (never committed)
+sample-data/generated/
+build/
+out/
+*.tar.gz
+*.bin
+*.safetensors
+*.pth
+# Local outputs
+.env
+.env.*
+*.log
+.DS_Store
+# Real configuration is a local copy of the committed templates (make init)
+config/*.json
+!config/*.example.json

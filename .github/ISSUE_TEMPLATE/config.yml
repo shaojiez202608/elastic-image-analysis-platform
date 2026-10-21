@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security issue (do not open a public issue)
+    url: https://aws.amazon.com/security/vulnerability-reporting/
+    about: Report suspected vulnerabilities privately via the AWS vulnerability reporting page or aws-security@amazon.com.

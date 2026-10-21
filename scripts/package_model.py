@@ -33,7 +33,7 @@ MAX_BYTES = 200 * 1024 * 1024
 def download(url: str = URL) -> bytes:
     if not url.startswith("https://"):
         raise ValueError("https only")
-    with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 - fixed https URL
+    with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 - https URL checked or fixed  # nosec B310
         data = r.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
         raise ValueError("download larger than expected")

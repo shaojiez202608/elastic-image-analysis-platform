@@ -30,7 +30,7 @@ BAD_CASES = {
 
 
 def good_image(seed: int, size: tuple[int, int] = (320, 240), fmt: str = "JPEG") -> bytes:
-    rnd = random.Random(seed)  # noqa: S311 - synthetic test images, not security
+    rnd = random.Random(seed)  # noqa: S311 - synthetic test images, not security  # nosec B311
     w, h = size
     img = Image.new("RGB", size)
     draw = ImageDraw.Draw(img)

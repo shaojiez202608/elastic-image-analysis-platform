@@ -47,7 +47,7 @@ def resolve(table: dict, *, region: str, architecture: str, accelerator: str, ve
 
 
 def fetch_table() -> dict:
-    with urllib.request.urlopen(TABLE_URL, timeout=30) as r:  # noqa: S310 - fixed https URL
+    with urllib.request.urlopen(TABLE_URL, timeout=30) as r:  # noqa: S310 - https URL checked or fixed  # nosec B310
         raw = r.read(5_000_000)
     if hashlib.sha256(raw).hexdigest() != TABLE_SHA256:
         raise SystemExit("image table checksum mismatch: refusing to use it")

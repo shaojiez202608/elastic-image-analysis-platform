@@ -64,7 +64,7 @@ class Cloud:
             SigV4Auth(self.s.get_credentials().get_frozen_credentials(), "execute-api", self.region).add_auth(req)
         r = urllib.request.Request(url, data=data, method=method, headers=dict(req.headers.items()))  # noqa: S310
         try:
-            with urllib.request.urlopen(r, timeout=30, context=self.ctx) as resp:  # noqa: S310
+            with urllib.request.urlopen(r, timeout=30, context=self.ctx) as resp:  # noqa: S310 - https URL checked or fixed  # nosec B310
                 return resp.status, json.loads(resp.read() or b"{}")
         except urllib.error.HTTPError as e:
             raw = e.read()
@@ -88,7 +88,7 @@ class Cloud:
         r = urllib.request.Request(upload["url"], data=body, method="POST",  # noqa: S310
                                    headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
         try:
-            with urllib.request.urlopen(r, timeout=60, context=self.ctx) as resp:  # noqa: S310
+            with urllib.request.urlopen(r, timeout=60, context=self.ctx) as resp:  # noqa: S310 - https URL checked or fixed  # nosec B310
                 return resp.status
         except urllib.error.HTTPError as e:
             return e.code

@@ -139,7 +139,7 @@ class OpenSearchIndex:
     def _urllib(self, method, url, headers, data):
         r = urllib.request.Request(url, data=data, method=method, headers=headers)  # noqa: S310 - https only
         try:
-            with urllib.request.urlopen(r, timeout=self.timeout, context=self.ctx) as resp:  # noqa: S310
+            with urllib.request.urlopen(r, timeout=self.timeout, context=self.ctx) as resp:  # noqa: S310 - https URL checked or fixed  # nosec B310
                 return resp.status, resp.read()
         except urllib.error.HTTPError as e:
             return e.code, e.read()

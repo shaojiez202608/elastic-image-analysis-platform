@@ -51,6 +51,12 @@ aws opensearch list-instance-type-details --engine-version "$OS_VER" --query 'In
   | tr '\t' '\n' | grep -qx "$OS_TYPE" && ok "OpenSearch $OS_VER on $OS_TYPE" || bad "$OS_TYPE not offered for $OS_VER in $REGION"
 IMG=$(cd "$ROOT" && uv run python scripts/resolve_inference_image.py --config "$IMAGING_CONFIG" --verify 2>/dev/null) \
   && ok "prebuilt inference image tag exists: $(echo "$IMG" | redact)" || bad "prebuilt inference image not resolvable for the profile"
+# Fargate does not run 64-bit ARM tasks in the use1-az3 zone (ECS developer guide, "64-bit ARM workloads").
+for az in $(python3 -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["network"]["availability_zones"]))' "$CFG_FILE"); do
+  zid=$(aws ec2 describe-availability-zones --zone-names "$az" --query 'AvailabilityZones[0].ZoneId' --output text 2>/dev/null)
+  [ "$zid" = "use1-az3" ] && bad "$az is zone use1-az3: Fargate ARM64 is not supported there; pick another AZ" \
+    || ok "$az ($zid) supports Fargate ARM64"
+done
 vpcs=$(aws ec2 describe-vpcs --query 'length(Vpcs)' --output text)
 have=$(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=$PROJECT-vpc" --query 'length(Vpcs)' --output text)
 vq=$(aws service-quotas get-service-quota --service-code vpc --quota-code L-F678F1CE --query 'Quota.Value' --output text 2>/dev/null)

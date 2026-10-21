@@ -1,0 +1,29 @@
+Third-party components
+======================
+
+This repository does not re-license any third-party component. Each component is used under its
+own license; the license identifiers below were read from the package metadata (uv.lock versions,
+2026-10-21) or from the component's official repository / model card.
+
+1. Distributed with this repository
+-----------------------------------
+None. The repository contains only its own source code, configuration templates and documentation.
+No model weights, images, data sets or vendored packages are committed.
+
+2. Downloaded at build or deployment time (not part of this repository)
+-----------------------------------------------------------------------
+| Component | Used for | License | Source |
+|---|---|---|---|
+| ResNet-18 weights `timm/resnet18.a1_in1k` (revision pinned in scripts/package_model.py, SHA-256 verified) | example image classification model | Apache-2.0 (model card metadata) | https://huggingface.co/timm/resnet18.a1_in1k |
+| ImageNet-1k (training data of the weights above; not downloaded) | - | the dataset's own terms of access; see OPEN-QUESTIONS.md | https://www.image-net.org/ |
+| AWS Deep Learning Containers - PyTorch inference image (prebuilt, pulled by SageMaker AI) | model serving | Apache-2.0 for the project, components under their own licenses | https://github.com/aws/deep-learning-containers |
+| Python Docker Official Image `python:3.12-slim-bookworm` (via Amazon ECR Public) | worker base image | PSF-2.0 (Python) and Debian package licenses | https://hub.docker.com/_/python |
+| boto3 | AWS SDK (worker, API, scripts) | Apache-2.0 | https://github.com/boto/boto3 |
+| Pillow | image validation and normalisation | MIT-CMU | https://github.com/python-pillow/Pillow |
+| aws-cdk-lib, constructs | infrastructure as code | Apache-2.0 | https://github.com/aws/aws-cdk |
+| cdk-nag | static checks of the templates | Apache-2.0 | https://github.com/cdklabs/cdk-nag |
+| pytest | tests | MIT | https://github.com/pytest-dev/pytest |
+| ruff | lint | MIT | https://github.com/astral-sh/ruff |
+| moto | AWS service stand-ins in tests | Apache-2.0 | https://github.com/getmoto/moto |
+| torch, torchvision (optional `model` group, local model check only) | runs model/code/inference.py locally | torch: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND others (package metadata); torchvision: BSD | https://github.com/pytorch/pytorch , https://github.com/pytorch/vision |
+| AWS CDK CLI (npx aws-cdk@2) | synth/deploy | Apache-2.0 | https://github.com/aws/aws-cdk-cli |

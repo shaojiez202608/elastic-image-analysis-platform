@@ -5,8 +5,9 @@
 #     (or CONFIRM_DATA=yes); without it a "retain" profile keeps its data stores and they are listed
 #   - every step warns and continues on failure; the residual check runs at the end
 # Out-of-stack leftovers handled here: log groups created by services (SageMaker AI endpoint logs,
-# Container Insights, CDK handler Lambdas), INACTIVE ECS task-definition revisions, and this project's
-# objects in the shared CDK bootstrap bucket (identified by asset hash; provider packages are kept).
+# Container Insights, CDK handler Lambdas), INACTIVE ECS task-definition revisions, SageMaker AI lineage
+# entities created for the endpoint, and this project's objects in the shared CDK bootstrap bucket
+# (identified by asset hash or content; provider packages are kept).
 # Usage: [IMAGING_CONFIG=...] scripts/destroy.sh
 set -uo pipefail
 source "$(dirname "$0")/lib/env.sh"
@@ -46,9 +47,14 @@ for lg in $(aws logs describe-log-groups --query "logGroups[?contains(logGroupNa
   aws logs delete-log-group --log-group-name "$lg" && echo "  deleted $lg" || warn "log group $lg"
 done
 
-echo "[destroy] 4. this project's objects in the CDK bootstrap bucket"
-CONFIRM_ASSETS=yes uv run python scripts/cleanup_bootstrap_assets.py --assembly build/assets --assembly cdk.out --config "$IMAGING_CONFIG" \
-  --region "$REGION" --delete || warn "bootstrap asset cleanup incomplete"
+echo "[destroy] 4. SageMaker AI lineage entities created automatically for the endpoint"
+CONFIRM_LINEAGE=yes uv run python scripts/cleanup_lineage.py --config "$IMAGING_CONFIG" --delete || warn "lineage cleanup incomplete"
 
-echo "[destroy] 5. residual check"
+echo "[destroy] 5. this project's objects in the CDK bootstrap bucket (asset hashes + content identification)"
+# --content-scan also finds assets of earlier deployments whose manifests were overwritten (templates must carry
+# both the Project tag value and the stack prefix; zips must contain this project's handler).
+CONFIRM_ASSETS=yes uv run python scripts/cleanup_bootstrap_assets.py --assembly build/assets --assembly cdk.out --config "$IMAGING_CONFIG" \
+  --region "$REGION" --content-scan --delete || warn "bootstrap asset cleanup incomplete"
+
+echo "[destroy] 6. residual check"
 uv run python scripts/check_residuals.py --config "$IMAGING_CONFIG"

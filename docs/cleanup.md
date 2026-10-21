@@ -8,8 +8,12 @@ Commands are in README "Clean-up". What they do and what you must check yourself
    - deletes ECS task-definition revisions of the project's families;
    - deletes log groups created by services outside the stacks: `/aws/sagemaker/Endpoints/<PREFIX>-endpoint`,
      `/aws/ecs/containerinsights/<PREFIX>-cluster/performance`, log groups of CDK helper Lambdas;
-   - deletes this project's objects (all versions) from the shared CDK bootstrap bucket, identified by asset hash;
-     CDK provider packages shared with other projects and the CDKToolkit stack are not touched;
+   - deletes the SageMaker AI lineage entities (contexts, actions, artifacts) that the service records automatically
+     for each endpoint deployment; artifacts linked to anything outside this project are kept and reported;
+   - deletes this project's objects (all versions) from the shared CDK bootstrap bucket, identified by asset hash
+     and, for earlier deployments, by content (template with this project's tag value and stack prefix, or a zip
+     with this project's handler); CDK provider packages shared with other projects and the CDKToolkit stack are not
+     touched;
    - runs the residual check.
 2. `make verify-cleanup` lists every category (stacks, buckets, log groups, ECR, Lambda, IAM roles/policies,
    SageMaker endpoints/endpoint configurations/models, scaling targets, OpenSearch domains, ECS clusters/task

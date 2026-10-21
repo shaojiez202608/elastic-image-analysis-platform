@@ -78,6 +78,12 @@ class Checker:
         self.report("sagemaker endpoint configs", [e["EndpointConfigName"] for e in self.pages(
             sm, "list_endpoint_configs", "EndpointConfigs", NameContains=p)])
         self.report("sagemaker models", [m["ModelName"] for m in self.pages(sm, "list_models", "Models", NameContains=p)])
+        # Lineage entities SageMaker AI records automatically for each endpoint deployment (cleanup_lineage.py).
+        self.report("sagemaker lineage contexts/actions",
+                    [c["ContextName"] for c in self.pages(sm, "list_contexts", "ContextSummaries")
+                     if c["ContextName"].startswith(f"{p}-endpoint-")]
+                    + [a["ActionName"] for a in self.pages(sm, "list_actions", "ActionSummaries")
+                       if a["ActionName"].startswith(f"{p}-endpoint-")])
         aas = self.c("application-autoscaling")
         targets = []
         for ns in ("sagemaker", "ecs"):
@@ -191,7 +197,11 @@ class Checker:
                 kind, name = res.split("/", 1)
                 fn = {"endpoint": ("describe_endpoint", "EndpointName"),
                       "endpoint-config": ("describe_endpoint_config", "EndpointConfigName"),
-                      "model": ("describe_model", "ModelName")}.get(kind)
+                      "model": ("describe_model", "ModelName"), "context": ("describe_context", "ContextName"),
+                      "action": ("describe_action", "ActionName")}.get(kind)
+                if kind == "artifact":
+                    self.c("sagemaker").describe_artifact(ArtifactArn=arn)
+                    return True
                 if fn:
                     getattr(self.c("sagemaker"), fn[0])(**{fn[1]: name})
                     return True

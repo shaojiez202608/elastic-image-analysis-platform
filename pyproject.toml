@@ -9,7 +9,7 @@ dependencies = []
 
 [dependency-groups]
 # Runtime of the worker / Lambda code and the local mode (also installed in the worker image).
-runtime = ["boto3>=1.40", "pillow>=11.3"]
+runtime = ["boto3>=1.40", "pillow>=13.0.0", "certifi>=2026.10.19"]
 dev = ["pytest>=8", "ruff>=0.6", "moto[s3,sqs,dynamodb,sns]>=5.0"]
 infra = ["aws-cdk-lib>=2.220.0", "constructs>=10.4", "cdk-nag>=2.37"]
 # Optional: runs model/code/inference.py locally against the real weights (not used by CI).
@@ -19,6 +19,8 @@ model = ["torch>=2.6", "torchvision>=0.21"]
 package = false
 # Dependency cooldown: do not resolve package versions published in the last 7 days.
 exclude-newer = "7 days"
+# Security fixes released inside the cooldown window (osv-scanner, 2026-10-21): allowed early, per package.
+exclude-newer-package = { pillow = "2026-10-21T00:00:00Z", certifi = "2026-10-21T00:00:00Z" }
 default-groups = ["runtime", "dev", "infra"]
 
 [tool.pytest.ini_options]

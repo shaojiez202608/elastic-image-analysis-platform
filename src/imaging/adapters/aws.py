@@ -7,6 +7,7 @@ backoff); other client errors propagate and are retried by the queue until the D
 from __future__ import annotations
 
 import json
+import logging
 import ssl
 import urllib.error
 import urllib.request
@@ -22,6 +23,7 @@ from ..documents import INDEX_NAME
 from ..ports import AsyncInvocation, IndexOutcome, Message, TooLarge, TransientError
 from ..search_query import SearchRequest, page_response, to_dsl
 
+log = logging.getLogger("imaging")
 TRANSIENT_CODES = {"ThrottlingException", "Throttling", "ServiceUnavailable", "InternalFailure",
                    "InternalServerError", "ProvisionedThroughputExceededException", "RequestLimitExceeded",
                    "SlowDown", "ServiceUnavailableException", "ModelNotReadyException"}
@@ -144,12 +146,21 @@ class OpenSearchIndex:
         except (urllib.error.URLError, TimeoutError) as e:
             raise TransientError("search unreachable") from e
 
+    @staticmethod
+    def _error_type(resp: dict) -> str:
+        err = resp.get("error")
+        etype = err.get("type") if isinstance(err, dict) else None
+        # Only the service's error type keyword is logged (e.g. security_exception), never a message or body.
+        return etype if isinstance(etype, str) and etype.replace("_", "").isalnum() and len(etype) < 64 else "unknown"
+
     def put(self, doc_id: str, doc: dict[str, Any], version: int) -> IndexOutcome:
         status, resp = self.request("PUT", f"/{self.index}/_doc/{doc_id}", doc,
                                     params=f"version={int(version)}&version_type=external")
         if status == 409:
             return IndexOutcome("duplicate")
         if status not in (200, 201):
+            log.warning(json.dumps({"event": "search_write_failed", "status": status,
+                                    "error_type": self._error_type(resp)}))
             raise RuntimeError(f"index write failed with {status}")
         return IndexOutcome(resp.get("result", "created"))
 
@@ -164,6 +175,8 @@ class OpenSearchIndex:
     def search(self, req: SearchRequest) -> dict[str, Any]:
         status, resp = self.request("POST", f"/{self.index}/_search", to_dsl(req))
         if status != 200:
+            log.warning(json.dumps({"event": "search_query_failed", "status": status,
+                                    "error_type": self._error_type(resp)}))
             raise RuntimeError(f"search failed with {status}")
         hits = resp.get("hits", {})
         total = hits.get("total", {}).get("value", 0) if isinstance(hits.get("total"), dict) else hits.get("total", 0)

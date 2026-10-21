@@ -1,0 +1,27 @@
+# Weekly, grouped, with a cooldown so new releases settle before they are proposed. Never auto-merged.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      cdk:
+        # aws-cdk-lib, constructs and cdk-nag move together (cdk-nag tracks aws-cdk-lib releases)
+        patterns: ["aws-cdk-lib", "constructs", "cdk-nag"]
+      runtime:
+        # boto3 and pillow are also pinned in docker/worker/requirements.txt (re-export with uv export)
+        patterns: ["boto3", "pillow"]
+      dev-tools:
+        patterns: ["pytest", "ruff", "moto", "torch", "torchvision"]

@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in the prototype does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include account IDs, credentials, real images or customer data. Use 111122223333 and example.com.
+        Security issues: see the contact link instead of filing an issue.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Command you ran, expected result, actual result.
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or tag
+      placeholder: v0.1.0 / <COMMIT_SHA>
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [infra (CDK), worker pipeline, inference model, search/API, ops scripts, docs, other]
+    validations:
+      required: true
+  - type: input
+    id: region
+    attributes:
+      label: Region and profile
+      placeholder: us-east-1, config/sandbox.json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs (redacted)
+      render: text

@@ -1,0 +1,109 @@
+# Checks only: nothing in this workflow deploys, uses AWS credentials or writes to the repository.
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    name: Lint, tests, offline demo, synth with cdk-nag, secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      # From gitleaks_8.30.1_checksums.txt of the official release (public checksum, not a secret).
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb # pragma: allowlist secret
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0 # gitleaks scans the full history
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+      - name: Install gitleaks (checksum verified)
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tgz" | sha256sum -c -
+          mkdir -p "${RUNNER_TEMP}/bin" && tar -xzf /tmp/gitleaks.tgz -C "${RUNNER_TEMP}/bin" gitleaks
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+      - run: uv sync --frozen
+      - name: Lint
+        run: make lint
+      - name: Unit, integration and CDK assertion tests (synthetic data is generated in the tests)
+        run: make test
+      - name: Offline demo (local mode end to end, D1-D5)
+        run: make demo-offline
+      - name: Synth both templates with cdk-nag (no AWS credentials; AZs fixed in the profiles)
+        run: make synth
+      - name: Secret scan (full history) and canary
+        run: make scan
+
+  ash:
+    # Not run locally (no Docker on the maintainer machine); this job is where ASH runs.
+    # A scanner that did not complete counts as a failure, like an actionable finding.
+    name: ASH (all scanners must complete)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      UV_VERSION: 0.10.10
+      # automated-security-helper v3.7.1 (lightweight tag; commit from git ls-remote)
+      ASH_REF: af1206aff596f1288ad066828058b3011de2a998 # pragma: allowlist secret (public git commit hash)
+    steps:
+      # Same layout as ASH's own GitHub Actions tutorial: run ASH from a checkout of its repository so
+      # the image build context contains pyproject.toml (running it from an installed package does not).
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          path: repo
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: awslabs/automated-security-helper
+          ref: ${{ env.ASH_REF }}
+          path: ash-src
+          persist-credentials: false
+      - name: Install uv
+        run: python3 -m pip install --user "uv==${UV_VERSION}"
+      # ASH's default base image is python:3.12-slim-bookworm on public.ecr.aws. Anonymous pulls from
+      # GitHub-hosted runners hit "429 Too Many Requests", and `ash --custom-build-arg` is not passed to
+      # the scan-mode image build. So the image is built here from the Docker Hub copy of the same tag,
+      # with the build arguments ASH itself uses, and ASH runs it with --no-build.
+      - name: Build the ASH image
+        run: |
+          docker build --target ci --tag automated-security-helper:ci \
+            --build-arg "BASE_IMAGE=docker.io/library/python:3.12-slim-bookworm" \
+            --build-arg "UID=$(id -u)" --build-arg "GID=$(id -g)" \
+            --build-arg INSTALL_ASH_REVISION=LOCAL --build-arg OFFLINE=NO \
+            --build-arg OFFLINE_SEMGREP_RULESETS=p/ci \
+            --file ash-src/Dockerfile ash-src
+      - name: Run ASH in container mode
+        env:
+          ASH_IMAGE_NAME: automated-security-helper:ci
+        run: |
+          "${HOME}/.local/bin/uv" run --directory ash-src ash --mode container --no-build --build-target ci \
+            --source-dir "${GITHUB_WORKSPACE}/repo" --output-dir "${RUNNER_TEMP}/ash" \
+            || echo "ash exited with $?"
+      - name: Keep the ASH report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ash-report
+          path: ${{ runner.temp }}/ash
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Fail on findings or incomplete scanners
+        run: |
+          python3 - "${RUNNER_TEMP}/ash/ash_aggregated_results.json" <<'PY'
+          import json, sys
+          stats = json.load(open(sys.argv[1]))["metadata"]["summary_stats"]
+          print(json.dumps(stats, indent=2))
+          bad = {k: stats.get(k, 0) for k in ("actionable", "failed", "missing")}
+          if any(bad.values()):
+              sys.exit(f"ASH did not pass: {bad}")
+          PY

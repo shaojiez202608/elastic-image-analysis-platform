@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a change to the prototype.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change and how it would be tested
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The change keeps the prototype non-production and sandbox-deployable.
+          required: true

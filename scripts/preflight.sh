@@ -39,7 +39,7 @@ note "Docker not required (worker image and model artifact are built in CodeBuil
 
 echo "[preflight] 3. region availability and quotas"
 SM_TYPE=$(cfg inference.instance_type); SM_MAX=$(cfg inference.max_instances)
-q=$(aws service-quotas list-service-quotas --service-code sagemaker --query "Quotas[?QuotaName=='$SM_TYPE for endpoint usage'].Value | [0]" --output text 2>/dev/null)
+q=$(aws service-quotas list-service-quotas --service-code sagemaker --query "Quotas[?QuotaName=='$SM_TYPE for endpoint usage'].Value" --output text 2>/dev/null | tr '\t' '\n' | grep -v -x -e None -e '' | head -1)
 if [ -z "$q" ] || [ "$q" = "None" ]; then bad "$SM_TYPE: no endpoint-usage quota listed in $REGION (type not offered or not readable)"
 else
   used=$(aws sagemaker list-endpoints --query 'length(Endpoints)' --output text 2>/dev/null)

@@ -139,7 +139,7 @@ def parse_result(body: str):
 
 
 FAILURE_CODES = (
-    (re.compile(r"timeout|timed out|time exceeded|InvocationTimeout", re.I), "timeout"),
+    (re.compile(r"timeout|timed out|time ?exceeded|InvocationTimeout", re.I), "timeout"),
     (re.compile(r"expired|ttl", re.I), "request_expired"),
     (re.compile(r"\b5\d\d\b|server error|ModelError|internal", re.I), "model_error"),
     (re.compile(r"\b4\d\d\b|client error|validation", re.I), "model_client_error"),

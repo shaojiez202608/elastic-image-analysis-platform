@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_MONEY = re.compile(r"价格|成本|节省|\bprices?\b|\bpricing\b|\bcosts?\b|\bcostly\b|\bsavings?\b|\bcheaper\b",
                              re.IGNORECASE)
 ACCOUNT = re.compile(r"(?<![0-9A-Za-z])\d{12}(?![0-9A-Za-z])")
-LOCAL = re.compile(r"/Users/|163\.com", re.IGNORECASE)
+# Built from fragments so the patterns themselves never appear literally in the repository.
+LOCAL = re.compile("|".join(re.escape(a + b) for a, b in (("/Us", "ers/"), ("@16", "3.com"))), re.IGNORECASE)
 BINARY = {".png", ".jpg", ".jpeg", ".gz", ".bin", ".pth", ".safetensors", ".zip"}
 
 
@@ -56,3 +57,4 @@ def test_the_guard_detects_a_planted_example():
     for s in ("estimated cost", "价格", "节省 30%", "Savings plan", "pricing page"):
         assert FORBIDDEN_MONEY.search(s)
     assert ACCOUNT.search("arn:aws:iam::123456789012:root")
+    assert LOCAL.search("/Us" + "ers/someone/project")

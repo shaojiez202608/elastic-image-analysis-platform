@@ -122,3 +122,16 @@ def test_real_model_output_passes_the_indexer_validator(tmp_path):
     assert len(parse_model_output(body.encode(), num_classes=1000, max_k=5).top_k) == 5
     with pytest.raises(ValueError):
         inference.input_fn(io.BytesIO(b"x").getvalue(), "text/html")
+
+
+def test_compare_runs_extends_the_shorter_run_to_a_common_window(tmp_path):
+    import compare_runs
+
+    d = tmp_path / "fixed"
+    d.mkdir()
+    (d / "timeline.csv").write_text("t,endpoint_current,dispatcher_running,indexer_running\n0,2,2,1\n15,2,2,1\n")
+    s = {"observed_window_s": 30, "items_analyzed": 10}
+    compare_runs.extend_to_window(d, s, 90)
+    # 2 samples x 15 s x 2 instances = 1 minute observed, plus 2 instances for the missing 60 s = 3 minutes
+    assert s["endpoint_instance_minutes_common_window"] == 3.0
+    assert s["items_per_endpoint_instance_minute_common_window"] == round(10 / 3, 3)

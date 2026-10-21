@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-from .validation import Limits
-
 
 def _int(env: dict, name: str, default: int) -> int:
     return int(env.get(name, default))
@@ -39,7 +37,9 @@ class Settings:
     categories: tuple[str, ...] = ("general", "batch", "interactive", "archive")
 
     @property
-    def limits(self) -> Limits:
+    def limits(self):
+        from .validation import Limits  # Pillow-dependent; not packaged with the API Lambda
+
         return Limits(self.max_upload_bytes, self.max_pixels, self.min_side, self.max_side, self.normalize_max_side)
 
     @classmethod

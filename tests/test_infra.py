@@ -258,3 +258,27 @@ def test_config_validation(mutate, msg):
     with pytest.raises(ConfigError) as e:
         parse(raw)
     assert msg in str(e.value)
+
+
+def test_lambda_package_imports_without_excluded_modules(tmp_path):
+    """The API and bootstrap Lambdas ship src/ minus LAMBDA_EXCLUDES; their handlers must import from that
+    package alone and must not need Pillow (found in the first sandbox run: ImportModuleError)."""
+    import fnmatch
+    import shutil
+    import subprocess
+    import sys
+
+    from imaging_infra.search_stack import LAMBDA_EXCLUDES
+
+    src = ROOT / "src"
+    for f in src.rglob("*.py"):
+        rel = f.relative_to(src).as_posix()
+        if any(fnmatch.fnmatch(rel, pat) for pat in LAMBDA_EXCLUDES):
+            continue
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(f, tmp_path / rel)
+    code = ("import sys; import api.handler, search_bootstrap.handler; "
+            "bad=[m for m in sys.modules if m == 'PIL' or m.startswith('PIL.')]; assert not bad, bad")
+    r = subprocess.run([sys.executable, "-c", code], cwd=tmp_path, capture_output=True, text=True,
+                       env={"PYTHONPATH": str(tmp_path), "PATH": "/usr/bin:/bin", "AWS_REGION": "us-east-1"})
+    assert r.returncode == 0, r.stderr[-500:]

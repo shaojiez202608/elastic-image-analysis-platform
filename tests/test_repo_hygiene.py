@@ -56,5 +56,5 @@ def test_the_guard_detects_a_planted_example():
     # Negative control: the pattern must fire on the words it is meant to block.
     for s in ("estimated cost", "价格", "节省 30%", "Savings plan", "pricing page"):
         assert FORBIDDEN_MONEY.search(s)
-    assert ACCOUNT.search("arn:aws:iam::123456789012:root")
+    assert ACCOUNT.search("arn:aws:iam::" + "4" * 12 + ":root")  # planted 12-digit value, built at run time
     assert LOCAL.search("/Us" + "ers/someone/project")

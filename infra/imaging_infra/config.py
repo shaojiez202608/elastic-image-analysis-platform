@@ -27,9 +27,8 @@ RE_CATEGORY = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 RE_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[a-z]{2,}$", re.IGNORECASE)
 FARGATE_CPU_MEM = {256: (512, 2048), 512: (1024, 4096), 1024: (2048, 8192), 2048: (4096, 16384), 4096: (8192, 30720)}
 REQUIRED_TAGS = ("Project", "Purpose", "Teardown")
-SIZING_HELP = ("choose from the official pages: SageMaker AI instance types "
-               "https://aws.amazon.com/sagemaker/ai/pricing/ (Asynchronous Inference supports the instance types "
-               "listed there per Region) and OpenSearch Service "
+SIZING_HELP = ("choose a SageMaker AI instance type that the target Region offers for endpoints (Service Quotas lists "
+               "'<TYPE> for endpoint usage' per Region; make preflight checks it) and an OpenSearch instance type from "
                "https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-instance-types.html")
 SYNTH_CHECK_SM_INSTANCE = "ml.synthcheck.placeholder"
 SYNTH_CHECK_OS_INSTANCE = "synthcheck.placeholder.search"

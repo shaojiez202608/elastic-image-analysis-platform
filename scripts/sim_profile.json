@@ -1,0 +1,16 @@
+{
+  "_comment": "Illustrative inputs for the local simulation only (not measurements). Mirrors the sandbox scaling policy shape.",
+  "phases": [
+    {"kind": "burst", "seconds": 600, "count": 120},
+    {"kind": "idle", "seconds": 600},
+    {"kind": "sustained", "seconds": 900, "per_minute": 6},
+    {"kind": "idle", "seconds": 900}
+  ],
+  "config": {
+    "workers": {"min_units": 0, "max_units": 3, "start_seconds": 45, "scale_out_cooldown": 60, "scale_in_cooldown": 120},
+    "endpoint": {"min_units": 0, "max_units": 2, "start_seconds": 300, "scale_out_cooldown": 60, "scale_in_cooldown": 120},
+    "dispatch_seconds": 0.5, "inference_seconds": 2.0, "concurrency_per_instance": 2,
+    "worker_steps": [[1, 1], [40, 2]], "target_backlog_per_instance": 4
+  },
+  "fixed": {"workers": 2, "instances": 2}
+}

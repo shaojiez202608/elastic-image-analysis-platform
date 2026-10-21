@@ -25,7 +25,7 @@ the Amazon SageMaker AI developer guide, the AWS CDK API reference and AWS Solut
    combines the two layers or records such a timeline.
 2. **A "fixed capacity vs elastic capacity" evaluation method** (what to measure, how to run the same
    load against both, how to read relative results: queue wait percentiles, utilisation, instance-time,
-   cold-start contribution) with scripts, a local discrete-time simulation, and no price figures.
+   cold-start contribution) with scripts and a local discrete-time simulation; it reports relative behaviour only.
 3. **Complete failure handling**: per-message retry with backoff, dead-letter queues on both queues,
    bounded re-invocation of failed or timed-out inferences, idempotent result writes (deterministic
    document IDs plus external versioning, conditional job-state transitions), and permanently bad files

@@ -54,6 +54,8 @@ class InferenceStack(Stack):
         allow(role, "ReadStagedImages", ["s3:GetObject"], [s3_objects(cfg, "images", "staging/*")])
         allow(role, "WriteAsyncResults", ["s3:PutObject"], [s3_objects(cfg, "images", "async-output/*"),
                                                            s3_objects(cfg, "images", "async-failure/*")])
+        # Endpoint creation validates s3:ListBucket on the async output bucket (found in the first sandbox run).
+        allow(role, "ListAsyncBucket", ["s3:ListBucket"], [storage.images.bucket_arn])
         storage.key.grant(role, "kms:Decrypt", "kms:GenerateDataKey")
         storage.success_topic.grant_publish(role)
         storage.error_topic.grant_publish(role)

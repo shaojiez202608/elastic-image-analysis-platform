@@ -2,7 +2,7 @@
 
 Creates the strict-mapping index and two least-privilege FGAC roles, mapped to IAM role ARNs as
 backend roles (the documented way to map IAM principals with fine-grained access control):
-  imaging_writer  -> indexer task role : index/get documents in the images index only
+  imaging_writer  -> indexer task role : index/get documents in the images index only (action group `index`)
   imaging_reader  -> query API role    : read/search the images index only
 Idempotent: re-running on Update re-applies the same definitions. Delete does nothing (the domain is
 deleted with its stack).
@@ -16,9 +16,12 @@ import os
 from imaging.adapters.aws import OpenSearchIndex
 from imaging.documents import INDEX_NAME, MAPPING
 
+# "index" is the documented default action group for creating/updating documents (index*, update*, bulk*,
+# mapping put); the bare indices:data/write/index action was refused with security_exception in the sandbox run.
+# https://docs.opensearch.org/latest/security/access-control/default-action-groups/
 WRITER = {"cluster_permissions": [],
           "index_permissions": [{"index_patterns": [INDEX_NAME],
-                                 "allowed_actions": ["indices:data/write/index", "indices:data/read/get"]}]}
+                                 "allowed_actions": ["index", "indices:data/read/get"]}]}
 READER = {"cluster_permissions": [],
           "index_permissions": [{"index_patterns": [INDEX_NAME], "allowed_actions": ["read"]}]}
 

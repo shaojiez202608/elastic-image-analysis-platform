@@ -22,7 +22,8 @@ def test_creates_index_and_least_privilege_roles():
     assert done == ["index:created", "role:imaging_writer", "role:imaging_reader"]
     roles = {p: b for m, p, b in c.calls if "/roles/" in p}
     writer = roles["/_plugins/_security/api/roles/imaging_writer"]["index_permissions"][0]
-    assert writer["index_patterns"] == [INDEX_NAME] and "indices:data/write/index" in writer["allowed_actions"]
+    assert writer["index_patterns"] == [INDEX_NAME] and writer["allowed_actions"] == ["index", "indices:data/read/get"]
+    assert not any(a in ("crud", "data_access", "indices_all", "*") for a in writer["allowed_actions"])
     assert all(r["cluster_permissions"] == [] for r in roles.values())
     maps = {p: b for m, p, b in c.calls if "/rolesmapping/" in p}
     assert maps["/_plugins/_security/api/rolesmapping/imaging_reader"]["backend_roles"] == ["arn:aws:iam::111122223333:role/r"]

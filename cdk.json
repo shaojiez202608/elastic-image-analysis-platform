@@ -1,0 +1,19 @@
+{
+  "app": ".venv/bin/python infra/app.py",
+  "context": {
+    "config": "config/sandbox.json",
+    "@aws-cdk/core:target-partitions": [
+      "aws"
+    ],
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true
+  },
+  "watch": {
+    "exclude": [
+      "cdk.out",
+      ".venv",
+      "tests"
+    ]
+  }
+}

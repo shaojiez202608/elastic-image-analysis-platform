@@ -1,0 +1,120 @@
+{
+  "_comment": "Handover profile: data is retained on stack deletion, the API is PRIVATE (reachable only through an execute-api VPC endpoint), fault injection is off. Instance types are intentionally blank: choose them from the official pages linked in docs/deployment-guide.md, then deploy. Synthesize with -c synthCheck=true to check the template before choosing.",
+  "project": "proto-imaging",
+  "region": "us-east-1",
+  "removal_policy": "retain",
+  "tags": {
+    "Project": "elastic-imaging",
+    "Purpose": "prototype",
+    "Teardown": "after-test"
+  },
+  "network": {
+    "vpc_cidr": "10.42.0.0/16",
+    "availability_zones": [
+      "us-east-1a",
+      "us-east-1b"
+    ],
+    "flow_logs": true
+  },
+  "storage": {
+    "log_retention_days": 90,
+    "upload_expiry_days": 30,
+    "output_expiry_days": 30
+  },
+  "upload": {
+    "max_upload_bytes": 10485760,
+    "presign_expires_seconds": 300,
+    "categories": [
+      "general",
+      "batch",
+      "interactive",
+      "archive"
+    ]
+  },
+  "image_limits": {
+    "max_pixels": 40000000,
+    "min_side": 32,
+    "max_side": 8192,
+    "normalize_max_side": 512
+  },
+  "queues": {
+    "visibility_timeout_seconds": 120,
+    "max_receive_count": 5,
+    "message_retention_days": 4
+  },
+  "workers": {
+    "cpu": 512,
+    "memory_mib": 1024,
+    "receive_batch": 10,
+    "dispatcher": {
+      "min_tasks": 0,
+      "max_tasks": 10,
+      "steps": [
+        {
+          "lower": 1,
+          "change": 1
+        },
+        {
+          "lower": 40,
+          "change": 2
+        }
+      ],
+      "scale_in_cooldown_seconds": 120,
+      "scale_out_cooldown_seconds": 60
+    },
+    "indexer": {
+      "min_tasks": 0,
+      "max_tasks": 4,
+      "steps": [
+        {
+          "lower": 1,
+          "change": 1
+        },
+        {
+          "lower": 40,
+          "change": 1
+        }
+      ],
+      "scale_in_cooldown_seconds": 120,
+      "scale_out_cooldown_seconds": 60
+    }
+  },
+  "inference": {
+    "instance_type": "",
+    "architecture": "arm64",
+    "accelerator": "cpu",
+    "framework_version": "2.6.0",
+    "py_version": "py312",
+    "min_instances": 0,
+    "max_instances": 4,
+    "initial_instances": 1,
+    "target_backlog_per_instance": 4,
+    "scale_in_cooldown_seconds": 120,
+    "scale_out_cooldown_seconds": 60,
+    "scale_from_zero": true,
+    "max_concurrent_invocations_per_instance": 2,
+    "invocation_timeout_seconds": 300,
+    "max_inference_attempts": 3,
+    "retry_base_delay_seconds": 60,
+    "network_isolation": true,
+    "fault_injection": false,
+    "fault_sleep_seconds": 0,
+    "top_k": 5
+  },
+  "search": {
+    "engine_version": "OpenSearch_2.19",
+    "instance_type": "",
+    "data_nodes": 2,
+    "volume_gib": 20
+  },
+  "api": {
+    "endpoint_type": "PRIVATE",
+    "throttle_rate": 20,
+    "throttle_burst": 40
+  },
+  "observability": {
+    "alarm_email": "",
+    "oldest_message_alarm_seconds": 600,
+    "failure_alarm_count": 5
+  }
+}

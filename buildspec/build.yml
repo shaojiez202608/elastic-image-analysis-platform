@@ -1,0 +1,26 @@
+# CodeBuild (ARM64 Linux) build: worker image -> ECR, model artifact -> artifacts bucket.
+# Variables come from scripts/build.sh (start-build environment overrides):
+#   REPO_URI, IMAGE_TAG, ARTIFACT_BUCKET, MODEL_KEY
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - set -eu
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${REPO_URI%%/*}"
+  build:
+    commands:
+      - set -eu
+      - |
+        if aws s3api head-object --bucket "$ARTIFACT_BUCKET" --key "$MODEL_KEY" >/dev/null 2>&1; then
+          echo "model artifact already present: $MODEL_KEY"
+        else
+          python3 scripts/package_model.py --out /tmp/model.tar.gz
+          aws s3 cp /tmp/model.tar.gz "s3://$ARTIFACT_BUCKET/$MODEL_KEY" --only-show-errors
+        fi
+      - |
+        if aws ecr describe-images --repository-name "${REPO_URI#*/}" --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+          echo "image tag already present: $IMAGE_TAG"
+        else
+          docker build --pull -f docker/worker/Dockerfile -t "$REPO_URI:$IMAGE_TAG" .
+          docker push "$REPO_URI:$IMAGE_TAG"
+        fi
